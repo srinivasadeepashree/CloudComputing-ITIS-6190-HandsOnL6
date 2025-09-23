@@ -2,6 +2,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.window import Window
+from pyspark.sql.functions import row_number
 
 spark = SparkSession.builder.appName("MusicAnalysis").getOrCreate()
 
@@ -12,8 +13,6 @@ songsmetadata = spark.read.csv("/workspaces/CloudComputing-ITIS-6190-HandsOnL6/s
 # Task 1: User Favorite Genres
 joined_df = listeninglogs.join(songsmetadata, on="song_id")
 user_genre_counts = joined_df.groupBy("user_id", "genre").agg(count("*").alias("play_count"))
-from pyspark.sql.window import Window
-from pyspark.sql.functions import row_number
 window_spec = Window.partitionBy("user_id").orderBy(col("play_count").desc())
 user_fav_genre = user_genre_counts.withColumn("rank", row_number().over(window_spec)).filter(col("rank") == 1).drop("rank")
 user_fav_genre.write.mode("overwrite").csv("output/userfavoritegenres", header=True)
